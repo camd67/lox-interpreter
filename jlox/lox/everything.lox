@@ -1,0 +1,43 @@
+// This is a comment
+(( )) {}
+!*+-/=<> <= ==
+
+"Strings"
+
+"Can also
+be
+multiline!"
+
+123
+123.456
+0.456
+
+and
+class
+else
+false
+for
+fun
+if
+nil
+or
+print
+return
+super
+this
+true
+var
+while
+
+identifier
+id_with_scores
+
+/* block comments
+should be totally
+okay
+var
+fun
+true
+*/
+
+// This is another commment!
