@@ -35,14 +35,22 @@ public class Lox {
 
         System.out.println("jlox REPL");
         System.out.println("CTRL + D to exit");
+        System.out.println("-f <filename> to run a file in the lox dir (no ext)");
         System.out.println();
 
-        while(true) {
+        while (true) {
             System.out.print("> ");
             var line = reader.readLine();
             if (line == null) {
                 break;
             }
+
+            // handle file prompt-f
+            if (line.startsWith("-f ")) {
+                runFile("lox/" + line.substring(2) + ".lox");
+                return;
+            }
+
             run(line);
             // Clear our error each time we run a prompt.
             // Don't want a single error to corrupt our entire REPL
@@ -53,9 +61,21 @@ public class Lox {
     private static void run(String source) {
         var scanner = new Scanner(source);
         var tokens = scanner.scanTokens();
+        var parser = new Parser(tokens);
+        var expression = parser.parse();
 
-        for (var token : tokens) {
-            System.out.println(token);
+        if (hadError) {
+            return;
+        }
+
+        System.out.println(new AstPrinter().print(expression));
+    }
+
+    static void error(Token token, String message) {
+        if (token.type == TokenType.EOF) {
+            report(token.line, " at end", message);
+        } else {
+            report(token.line, " at '" + token.lexeme + "'", message);
         }
     }
 
