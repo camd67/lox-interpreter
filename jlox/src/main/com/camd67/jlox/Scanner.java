@@ -42,6 +42,8 @@ class Scanner {
             case '+': addToken(PLUS); break;
             case ';': addToken(SEMICOLON); break;
             case '*': addToken(STAR); break;
+            case '?': addToken(QUESTION); break;
+            case ':': addToken(COLON); break;
             // Then deal with operators that are maybe 2 characters
             // These all peek ahead one character in case there's a combo
             case '!':

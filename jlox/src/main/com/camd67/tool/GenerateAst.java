@@ -7,20 +7,21 @@ import java.util.List;
 
 public class GenerateAst {
     public static void main(String[] args) throws IOException {
-         if (args.length != 1) {
-             System.err.println("Usage: generate_ast <output_directory>");
-             System.exit(64);
-         }
+        if (args.length != 1) {
+            System.err.println("Usage: generate_ast <output_directory>");
+            System.exit(64);
+        }
 
-         var outputDir = args[0];
+        var outputDir = args[0];
 
-         defineAst(outputDir, "Expr", List.of(
-                 // This really aught to be more strongly typed
-                 "Binary: Expr left, Token operator, Expr right",
-                 "Grouping: Expr expression",
-                 "Literal: Object value",
-                 "Unary: Token operator, Expr right"
-         ));
+        defineAst(outputDir, "Expr", List.of(
+            // This really aught to be more strongly typed
+            "Binary: Expr left, Token operator, Expr right",
+            "Grouping: Expr expression",
+            "Literal: Object value",
+            "Unary: Token operator, Expr right",
+            "Ternary: Expr check, Expr left, Expr right"
+        ));
     }
 
     private static void defineAst(
@@ -61,7 +62,7 @@ public class GenerateAst {
     private static void defineVisitor(PrintWriter writer, String baseName, List<String> types) {
         writer.println("    interface Visitor<R> {");
 
-        for(var type : types) {
+        for (var type : types) {
             var typeName = type.split(":")[0].trim();
             writer.println("        R visit" + typeName + baseName + "(" + typeName + " " + baseName.toLowerCase() + ");");
         }
@@ -69,10 +70,10 @@ public class GenerateAst {
     }
 
     private static void defineType(
-            PrintWriter writer,
-            String baseName,
-            String className,
-            String fieldList
+        PrintWriter writer,
+        String baseName,
+        String className,
+        String fieldList
     ) {
         writer.println("    static class " + className + " extends " + baseName + " {");
         writer.println();

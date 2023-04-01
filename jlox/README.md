@@ -7,7 +7,8 @@
 (with precedence)
 
 ```
-expression -> equality;
+expression -> ternary;
+ternary -> equality ( "?" ternary ":" ternary );
 equality -> comparison ( ("!=" | "==") comparison )*;
 comparison -> term ( (">" | ">=" | "<" | "<=" ) term )*;
 term -> factor ( ("-" | "+" ) factor )*;

@@ -32,10 +32,28 @@ public class Parser {
 
     /**
      * Grammar rule:
-     * expression -> equality
+     * expression -> ternary
      */
     private Expr expression() {
-        return equality();
+        return ternary();
+    }
+
+    /**
+     * Grammar rule:
+     * ternary -> equality ( "?" ternary ":" ternary )
+     */
+    private Expr ternary() {
+        var expr = equality();
+        if (match(QUESTION)) {
+            var left = ternary();
+            if (match(COLON)) {
+                var right = ternary();
+                expr = new Expr.Ternary(expr, left, right);
+            } else {
+                throw error(previous(), "mismatched ternary colon");
+            }
+        }
+        return expr;
     }
 
     /**
