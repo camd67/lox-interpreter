@@ -44,6 +44,9 @@ public class Interpreter implements Expr.Visitor<Object> {
             }
             case SLASH -> {
                 checkNumberOperands(expr.operator, left, right);
+                if ((double) right == 0.0) {
+                    throw new RuntimeError(expr.operator, "Division by zero");
+                }
                 return (double) left / (double) right;
             }
             case STAR -> {
