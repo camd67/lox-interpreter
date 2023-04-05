@@ -51,13 +51,20 @@ public class Interpreter implements Expr.Visitor<Object> {
                 return (double) left * (double) right;
             }
             case PLUS -> {
+                // If both are doubles we do math
+                // Otherwise if either of the two are strings we stringify the other and concat
                 if (left instanceof Double && right instanceof Double) {
                     return (double) left + (double) right;
-                } else if (left instanceof String && right instanceof String) {
-                    return (String) left + (String) right;
+                } else if (left instanceof String) {
+                    return left + stringify(right);
+                } else if (right instanceof String) {
+                    return stringify(left) + right;
                 }
 
-                throw new RuntimeError(expr.operator, "Operands must be two strings or two numbers");
+                throw new RuntimeError(
+                    expr.operator,
+                    "Operands must be either be two numbers or one of the two operands a string."
+                );
             }
         }
 
