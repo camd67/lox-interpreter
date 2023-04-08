@@ -1,13 +1,19 @@
 # jlox
 
 ## Grammar
-
-### v2
-
-(with precedence)
-
 ```
-expression -> ternary;
+program -> declaration* EOF;
+
+declaration -> varDecl | statement;
+statement -> exprStatement | printStmt;
+
+exprStmt -> expression ";";
+printStmt -> "print" expression ";";
+
+varDecl -> "var" IDENTIFIER ("=" expression)?";";
+
+expression -> assignment;
+assignment -> (IDENTIFIER "=" assignment)? ternary;
 ternary -> equality ( "?" ternary ":" ternary );
 equality -> comparison ( ("!=" | "==") comparison )*;
 comparison -> term ( (">" | ">=" | "<" | "<=" ) term )*;
@@ -17,13 +23,3 @@ unary -> ("!" | "-") unary | primary;
 primary -> NUMBER| STRING | "true" | "false" | "nil" | "(" expression ")";
 ```
 
-### v1
-
-```
-expression -> literal | unary | binary | grouping ;
-literal -> NUMBER | STRING | "true" | "false" | "nil" ;
-grouping -> "(" expression ")" ;
-unary -> ( "-" | "!" ) expression ;
-binary -> expression operator expression ;
-operator -> "==" | "!=" | "<" | "<=" | ">" | ">=" | "+" | "-" | "*" | "/" ;
-```

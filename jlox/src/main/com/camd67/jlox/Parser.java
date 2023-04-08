@@ -1,5 +1,6 @@
 package com.camd67.jlox;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.camd67.jlox.TokenType.*;
@@ -11,31 +12,121 @@ public class Parser {
     public static class ParseError extends RuntimeException {
     }
 
+    private final Lox lox;
     private final List<Token> tokens;
     private int current = 0;
 
-    Parser(List<Token> tokens) {
+    Parser(List<Token> tokens, Lox lox) {
         this.tokens = tokens;
+        this.lox = lox;
     }
 
     /**
      * Begins parsing the current list of tokens.
-     * Returns null if an error occurred during parsing.
+     * Grammar rule:
+     * program -> declaration* EOF
      */
-    Expr parse() {
+    List<Stmt> parse() {
+        var statements = new ArrayList<Stmt>();
+        while (!isAtEnd()) {
+            statements.add(declaration());
+        }
+        return statements;
+    }
+
+    /**
+     * Grammar rule:
+     * declaration -> varDecl | statement;
+     */
+    private Stmt declaration() {
         try {
-            return expression();
+            if (match(VAR)) {
+                return varDeclaration();
+            }
+            return statement();
         } catch (ParseError error) {
+            synchronize();
             return null;
         }
     }
 
     /**
      * Grammar rule:
-     * expression -> ternary
+     * varDecl -> "var" IDENTIFIER ("=" expression)? ";"
+     */
+    private Stmt varDeclaration() {
+        var name = consume(IDENTIFIER, "Expect variable name");
+
+        Expr initializer = null;
+        if (match(EQUAL)) {
+            initializer = expression();
+        }
+        consume(SEMICOLON, "Expect ';' after variable declaration.");
+        return new Stmt.Var(name, initializer);
+    }
+
+    /**
+     * Grammar rule:
+     * statement -> expressionStmt | printStmt
+     */
+    private Stmt statement() {
+        if (match(PRINT)) {
+            return printStatement();
+        } else {
+            return expressionStatement();
+        }
+    }
+
+    /**
+     * Grammar rule:
+     * printStmt -> "print" expression ";"
+     */
+    private Stmt printStatement() {
+        var value = expression();
+        consume(SEMICOLON, "Expect ';' after value.");
+        return new Stmt.Print(value);
+    }
+
+    /**
+     * Grammar rule:
+     * exprStmt -> expression ";"
+     */
+    private Stmt expressionStatement() {
+        var value = expression();
+        consume(SEMICOLON, "Expect ';' after value.");
+        return new Stmt.Expression(value);
+    }
+
+    /**
+     * Grammar rule:
+     * expression -> assignment;
      */
     private Expr expression() {
-        return ternary();
+        return assignment();
+    }
+
+    /**
+     * Grammar rule:
+     * assignment -> (IDENTIFIER "=" assignment)? ternary;
+     */
+    private Expr assignment() {
+        // Since we can't do a lookahead we'll just parse out the left hand side of the (possible) assignment.
+        // If we get back from that and find it is followed by an equals then we must've hit an assignment.
+        // We'll keep parsing and report an error if our left side isn't a variable/identifier
+        var expr = ternary();
+        if (match(EQUAL)) {
+            var equals = previous();
+            var value = ternary();
+            if (expr instanceof Expr.Variable) {
+                var name = ((Expr.Variable)expr).name;
+                return new Expr.Assign(name, value);
+            }
+
+            // Don't throw our error since we don't need to synchronize after this.
+            // We can safely keep parsing even though we hit an error
+            error(equals, "Invalid assignment target");
+        }
+        return expr;
     }
 
     /**
@@ -46,12 +137,9 @@ public class Parser {
         var expr = equality();
         if (match(QUESTION)) {
             var left = ternary();
-            if (match(COLON)) {
-                var right = ternary();
-                expr = new Expr.Ternary(expr, left, right);
-            } else {
-                throw error(previous(), "mismatched ternary colon");
-            }
+            consume(COLON, "mismatched ternary colon");
+            var right = ternary();
+            expr = new Expr.Ternary(expr, left, right);
         }
         return expr;
     }
@@ -128,7 +216,7 @@ public class Parser {
 
     /**
      * Grammar rule:
-     * primary -> NUMBER| STRING | "true" | "false" | "nil" | "(" expression ")"
+     * primary -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")"
      */
     private Expr primary() {
         if (match(FALSE)) {
@@ -139,6 +227,8 @@ public class Parser {
             return new Expr.Literal(null);
         } else if (match(NUMBER, STRING)) {
             return new Expr.Literal(previous().literal);
+        } else if (match(IDENTIFIER)) {
+            return new Expr.Variable(previous());
         } else if (match(LEFT_PAREN)) {
             var expr = expression();
             consume(RIGHT_PAREN, "Expect ')' after expression.");
@@ -157,7 +247,7 @@ public class Parser {
     }
 
     private ParseError error(Token token, String message) {
-        Lox.error(token, message);
+        lox.error(token, message);
         return new ParseError();
     }
 

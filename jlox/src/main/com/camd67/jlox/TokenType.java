@@ -1,6 +1,5 @@
 package com.camd67.jlox;
 
-import java.util.HashMap;
 import java.util.Map;
 
 enum TokenType {

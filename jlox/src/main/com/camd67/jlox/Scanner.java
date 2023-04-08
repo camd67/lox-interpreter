@@ -7,13 +7,15 @@ import static com.camd67.jlox.TokenType.*;
 
 class Scanner {
     private final String source;
+    private final Lox lox;
     private final List<Token> tokens = new ArrayList<>();
     private int start = 0;
     private int current = 0;
     private int line = 1;
 
-    public Scanner(String source) {
+    public Scanner(String source, Lox lox) {
         this.source = source;
+        this.lox = lox;
     }
 
     List<Token> scanTokens() {
@@ -109,7 +111,7 @@ class Scanner {
                     // Reserved words and identifiers
                     identifier();
                 } else {
-                    Lox.error(line, "Unexpected character.");
+                    lox.error(line, "Unexpected character.");
                 }
                 break;
         }
@@ -153,7 +155,7 @@ class Scanner {
             advance();
         }
         if (isAtEnd()) {
-            Lox.error(line, "Unterminated block comment");
+            lox.error(line, "Unterminated block comment");
             return;
         }
 
@@ -195,7 +197,7 @@ class Scanner {
 
         // We got to the end but must not have found a closing quote
         if (isAtEnd()) {
-            Lox.error(line, "Unterminated string");
+            lox.error(line, "Unterminated string");
             return;
         }
 

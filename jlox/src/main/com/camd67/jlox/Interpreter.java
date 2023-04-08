@@ -1,13 +1,53 @@
 package com.camd67.jlox;
 
-public class Interpreter implements Expr.Visitor<Object> {
-    void interpret(Expr expr) {
+import java.util.List;
+
+public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+    private final Lox lox;
+    private Environment environment = new Environment();
+
+    public Interpreter(Lox lox) {
+        this.lox = lox;
+    }
+
+    void interpret(List<Stmt> statements) {
         try {
-            var value = evaluate(expr);
-            System.out.println(stringify(value));
+            for (var statement : statements) {
+                execute(statement);
+            }
         } catch (RuntimeError error) {
-            Lox.runtimeError(error);
+            lox.runtimeError(error);
         }
+    }
+
+    @Override
+    public Void visitExpressionStmt(Stmt.Expression stmt) {
+        evaluate(stmt.expression);
+        return null;
+    }
+
+    @Override
+    public Void visitPrintStmt(Stmt.Print stmt) {
+        var value = evaluate(stmt.expression);
+        System.out.println(stringify(value));
+        return null;
+    }
+
+    @Override
+    public Void visitVarStmt(Stmt.Var stmt) {
+        Object value = null;
+        if (stmt.initializer != null) {
+            value = evaluate(stmt.initializer);
+        }
+        environment.define(stmt.name.lexeme, value);
+        return null;
+    }
+
+    @Override
+    public Object visitAssignExpr(Expr.Assign expr) {
+        var value = evaluate(expr.value);
+        environment.assign(expr.type, value);
+        return value;
     }
 
     @Override
@@ -110,6 +150,11 @@ public class Interpreter implements Expr.Visitor<Object> {
         }
     }
 
+    @Override
+    public Object visitVariableExpr(Expr.Variable expr) {
+        return environment.get(expr.name);
+    }
+
     private void checkNumberOperand(Token operator, Object operand) {
         if (operand instanceof Double) {
             return;
@@ -153,6 +198,10 @@ public class Interpreter implements Expr.Visitor<Object> {
 
     private Object evaluate(Expr expr) {
         return expr.accept(this);
+    }
+
+    private void execute(Stmt statement) {
+        statement.accept(this);
     }
 
     private String stringify(Object object) {

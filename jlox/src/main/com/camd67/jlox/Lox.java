@@ -2,20 +2,43 @@ package com.camd67.jlox;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.function.IntConsumer;
 
 public class Lox {
-    static boolean hadError;
-    static boolean hadRuntimeError;
-    private static Interpreter interpreter = new Interpreter();
-
     public static void main(String[] args) throws IOException {
+        new Lox(System.in, System.out, System.err, System::exit).runFromCli(args);
+    }
+
+    boolean hadError;
+    boolean hadRuntimeError;
+
+    private final InputStream input;
+    private final PrintStream output;
+    private final PrintStream errOutput;
+    private final IntConsumer exit;
+    private final Interpreter interpreter;
+
+    /**
+     * Constructs a new lox
+     */
+    public Lox(InputStream input, PrintStream output, PrintStream errOutput, IntConsumer exit) {
+        this.input = input;
+        this.output = output;
+        this.errOutput = errOutput;
+        this.exit = exit;
+        interpreter= new Interpreter(this);
+    }
+
+    public void runFromCli(String[] args) throws IOException {
         if (args.length > 1) {
-            System.out.println("Usage: jlox [script]");
-            System.exit(64);
+            output.println("Usage: jlox [script]");
+            exit.accept(64);
         } else if (args.length == 1) {
             runFile(args[0]);
         } else {
@@ -23,28 +46,27 @@ public class Lox {
         }
     }
 
-    private static void runFile(String filePath) throws IOException {
+    private void runFile(String filePath) throws IOException {
         var bytes = Files.readAllBytes(Paths.get(filePath));
         run(new String(bytes, Charset.defaultCharset()));
         if (hadError) {
-            System.exit(65);
+            exit.accept(65);
         }
         if (hadRuntimeError) {
-            System.exit(70);
+            exit.accept(70);
         }
     }
 
-    private static void runPrompt() throws IOException {
-        var input = new InputStreamReader(System.in);
-        var reader = new BufferedReader(input);
+    private void runPrompt() throws IOException {
+        var reader = new BufferedReader(new InputStreamReader(input));
 
-        System.out.println("jlox REPL");
-        System.out.println("CTRL + D to exit");
-        System.out.println("-f <filename> to run a file in the lox dir (no ext)");
-        System.out.println();
+        output.println("jlox REPL");
+        output.println("CTRL + D to exit");
+        output.println("-f <filename> to run a file in the lox dir (no ext)");
+        output.println();
 
         while (true) {
-            System.out.print("> ");
+            output.print("> ");
             var line = reader.readLine();
             if (line == null) {
                 break;
@@ -63,20 +85,20 @@ public class Lox {
         }
     }
 
-    private static void run(String source) {
-        var scanner = new Scanner(source);
+    private void run(String source) {
+        var scanner = new Scanner(source, this);
         var tokens = scanner.scanTokens();
-        var parser = new Parser(tokens);
-        var expression = parser.parse();
+        var parser = new Parser(tokens, this);
+        var statements = parser.parse();
 
         if (hadError) {
             return;
         }
 
-        interpreter.interpret(expression);
+        interpreter.interpret(statements);
     }
 
-    static void error(Token token, String message) {
+    void error(Token token, String message) {
         if (token.type == TokenType.EOF) {
             report(token.line, " at end", message);
         } else {
@@ -84,17 +106,17 @@ public class Lox {
         }
     }
 
-    static void error(int line, String message) {
+    void error(int line, String message) {
         report(line, "", message);
     }
 
-    private static void report(int line, String where, String message) {
-        System.err.println("[line" + line + "] Error" + where + ": " + message);
+    private void report(int line, String where, String message) {
+        errOutput.println("[line" + line + "] Error" + where + ": " + message);
         hadError = true;
     }
 
-    static void runtimeError(RuntimeError error) {
-        System.err.println(error.getMessage() + "\n[line " + error.token.line + "]");
+    void runtimeError(RuntimeError error) {
+        errOutput.println(error.getMessage() + "\n[line " + error.token.line + "]");
         hadRuntimeError = true;
     }
 }
