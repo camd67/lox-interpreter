@@ -140,6 +140,6 @@ class ScannerTest {
     @ParameterizedTest(name = "Scan for tokens - {0}")
     @MethodSource("scanForTokens_source")
     void scansForTokens(String name, String input, List<Token> output) {
-        assertEquals(output, new Scanner(input, LoxTestUtil.mockLox()).scanTokens());
+        assertEquals(output, new Scanner(input, LoxTestUtil.realLox()).scanTokens());
     }
 }

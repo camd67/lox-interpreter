@@ -3,10 +3,10 @@ package com.camd67.jlox;
 import java.util.List;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
-    private final Lox lox;
+    private final LoxGlobal lox;
     private Environment environment = new Environment();
 
-    public Interpreter(Lox lox) {
+    public Interpreter(LoxGlobal lox) {
         this.lox = lox;
     }
 
@@ -21,6 +21,12 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitBlockStmt(Stmt.Block stmt) {
+        executeBlock(stmt.statements, new Environment(environment));
+        return null;
+    }
+
+    @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
         evaluate(stmt.expression);
         return null;
@@ -29,7 +35,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitPrintStmt(Stmt.Print stmt) {
         var value = evaluate(stmt.expression);
-        System.out.println(stringify(value));
+        lox.logOut(stringify(value));
         return null;
     }
 
@@ -202,6 +208,19 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     private void execute(Stmt statement) {
         statement.accept(this);
+    }
+
+    private void executeBlock(List<Stmt> statements, Environment newEnv) {
+        // Store our current env so we can push it back after running all statements in this block
+        var previousEnv = this.environment;
+        try {
+            this.environment = newEnv;
+            for (var statement : statements) {
+                execute(statement);
+            }
+        } finally {
+            this.environment = previousEnv;
+        }
     }
 
     private String stringify(Object object) {

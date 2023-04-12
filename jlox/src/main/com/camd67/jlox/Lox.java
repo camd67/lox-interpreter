@@ -10,7 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.function.IntConsumer;
 
-public class Lox {
+public class Lox implements LoxGlobal {
     public static void main(String[] args) throws IOException {
         new Lox(System.in, System.out, System.err, System::exit).runFromCli(args);
     }
@@ -27,7 +27,7 @@ public class Lox {
     /**
      * Constructs a new lox
      */
-    public Lox(InputStream input, PrintStream output, PrintStream errOutput, IntConsumer exit) {
+    Lox(InputStream input, PrintStream output, PrintStream errOutput, IntConsumer exit) {
         this.input = input;
         this.output = output;
         this.errOutput = errOutput;
@@ -35,7 +35,7 @@ public class Lox {
         interpreter= new Interpreter(this);
     }
 
-    public void runFromCli(String[] args) throws IOException {
+    void runFromCli(String[] args) throws IOException {
         if (args.length > 1) {
             output.println("Usage: jlox [script]");
             exit.accept(64);
@@ -46,7 +46,7 @@ public class Lox {
         }
     }
 
-    private void runFile(String filePath) throws IOException {
+    void runFile(String filePath) throws IOException {
         var bytes = Files.readAllBytes(Paths.get(filePath));
         run(new String(bytes, Charset.defaultCharset()));
         if (hadError) {
@@ -57,7 +57,7 @@ public class Lox {
         }
     }
 
-    private void runPrompt() throws IOException {
+    void runPrompt() throws IOException {
         var reader = new BufferedReader(new InputStreamReader(input));
 
         output.println("jlox REPL");
@@ -74,7 +74,7 @@ public class Lox {
 
             // handle file prompt-f
             if (line.startsWith("-f ")) {
-                runFile("lox/" + line.substring(2) + ".lox");
+                runFile("lox/" + line.substring(3) + ".lox");
                 return;
             }
 
@@ -98,7 +98,8 @@ public class Lox {
         interpreter.interpret(statements);
     }
 
-    void error(Token token, String message) {
+    @Override
+    public void error(Token token, String message) {
         if (token.type == TokenType.EOF) {
             report(token.line, " at end", message);
         } else {
@@ -106,7 +107,8 @@ public class Lox {
         }
     }
 
-    void error(int line, String message) {
+    @Override
+    public void error(int line, String message) {
         report(line, "", message);
     }
 
@@ -115,8 +117,19 @@ public class Lox {
         hadError = true;
     }
 
-    void runtimeError(RuntimeError error) {
+    @Override
+    public void runtimeError(RuntimeError error) {
         errOutput.println(error.getMessage() + "\n[line " + error.token.line + "]");
         hadRuntimeError = true;
+    }
+
+    @Override
+    public void logOut(String message) {
+        output.println(message);
+    }
+
+    @Override
+    public void logErr(String message) {
+        errOutput.println(message);
     }
 }

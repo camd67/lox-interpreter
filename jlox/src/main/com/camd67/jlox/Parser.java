@@ -12,11 +12,11 @@ public class Parser {
     public static class ParseError extends RuntimeException {
     }
 
-    private final Lox lox;
+    private final LoxGlobal lox;
     private final List<Token> tokens;
     private int current = 0;
 
-    Parser(List<Token> tokens, Lox lox) {
+    Parser(List<Token> tokens, LoxGlobal lox) {
         this.tokens = tokens;
         this.lox = lox;
     }
@@ -67,14 +67,31 @@ public class Parser {
 
     /**
      * Grammar rule:
-     * statement -> expressionStmt | printStmt
+     * statement -> expressionStmt | printStmt | block
      */
     private Stmt statement() {
         if (match(PRINT)) {
             return printStatement();
+        } else if (match(LEFT_BRACE)) {
+            return new Stmt.Block(block());
         } else {
             return expressionStatement();
         }
+    }
+
+    /**
+     * Grammar rule:
+     * block -> "{" declaration* "}"
+     */
+    private List<Stmt> block() {
+        var statements = new ArrayList<Stmt>();
+
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            statements.add(declaration());
+        }
+
+        consume(RIGHT_BRACE, "Expect '}' after block");
+        return statements;
     }
 
     /**

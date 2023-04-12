@@ -53,6 +53,11 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     }
 
     @Override
+    public String visitBlockStmt(Stmt.Block stmt) {
+        return "BLOCK TODO";
+    }
+
+    @Override
     public String visitExpressionStmt(Stmt.Expression stmt) {
         return stmt.expression.accept(this);
     }

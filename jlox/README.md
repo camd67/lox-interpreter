@@ -5,8 +5,12 @@
 program -> declaration* EOF;
 
 declaration -> varDecl | statement;
-statement -> exprStatement | printStmt;
+statement -> exprStatement
+            | printStmt
+            | block
+            ;
 
+block -> "{" declaration* "}";
 exprStmt -> expression ";";
 printStmt -> "print" expression ";";
 
