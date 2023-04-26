@@ -7,6 +7,13 @@ import java.util.Map;
  * Stores the state (variables) for a given environment.
  */
 public class Environment {
+    /**
+     * Placeholder for what we can put in the map to signal
+     * "this variable is defined, but not assigned a value yet"
+     * we can't use nil/null since that is a valid value to assign
+     */
+    private static final Object VARIABLE_NOT_INITIALIZED = new Object();
+
     private final Map<String, Object> values = new HashMap<>();
 
     /**
@@ -30,7 +37,13 @@ public class Environment {
     Object get(Token name) {
         if (values.containsKey(name.lexeme)) {
             // First look in our env for the token
-            return values.get(name.lexeme);
+            var value = values.get(name.lexeme);
+
+            if (value != VARIABLE_NOT_INITIALIZED) {
+                return value;
+            } else {
+                throw new RuntimeError(name, "Variable not yet initialized '" + name.lexeme + "'.");
+            }
         } else if (enclosing != null) {
             // If not, continue up the chain
             return enclosing.get(name);
@@ -40,7 +53,14 @@ public class Environment {
     }
 
     /**
-     * Defines a variable in our environment
+     * Defines a variable in our environment with no initializer
+     */
+    void define(String name) {
+        values.put(name, VARIABLE_NOT_INITIALIZED);
+    }
+
+    /**
+     * Defines a variable in our environment with a value
      */
     void define(String name, Object value) {
         values.put(name, value);

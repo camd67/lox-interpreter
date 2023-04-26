@@ -1,0 +1,17 @@
+var a;
+var b;
+var c;
+
+a = "assigned";
+print a; // Fine, we assigned it a value
+
+b = nil;
+print b; // Fine, we assigned a nil value
+
+{
+    // blocks mean we may define a variable in one scope but it's not defined elsewhere
+    var c = "inside";
+    print c;
+}
+
+print c; // Error! Undefined variable

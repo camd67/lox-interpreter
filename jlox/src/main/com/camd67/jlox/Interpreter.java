@@ -21,6 +21,16 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitIfStmt(Stmt.If stmt) {
+        if (isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.thenBranch);
+        } else if (stmt.elseBranch != null) {
+            execute(stmt.elseBranch);
+        }
+        return null;
+    }
+
+    @Override
     public Void visitBlockStmt(Stmt.Block stmt) {
         executeBlock(stmt.statements, new Environment(environment));
         return null;
@@ -41,11 +51,12 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitVarStmt(Stmt.Var stmt) {
-        Object value = null;
         if (stmt.initializer != null) {
-            value = evaluate(stmt.initializer);
+            var value = evaluate(stmt.initializer);
+            environment.define(stmt.name.lexeme, value);
+        } else {
+            environment.define(stmt.name.lexeme);
         }
-        environment.define(stmt.name.lexeme, value);
         return null;
     }
 
@@ -85,7 +96,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 return (double) left <= (double) right;
             }
             case MINUS -> {
-                checkNumberOperand(expr.operator, right);
+                checkNumberOperands(expr.operator, left, right);
                 return (double) left - (double) right;
             }
             case SLASH -> {

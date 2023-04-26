@@ -1,8 +1,12 @@
 package com.camd67.jlox;
 
+import java.util.List;
+
 public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
-    String print(Expr expr) {
-        return expr.accept(this);
+    void print(List<Stmt> statements, LoxGlobal lox) {
+        for (var statement : statements) {
+            lox.logOut(statement.accept(this));
+        }
     }
 
     private String parenthesize(String name, Expr... exprs) {
@@ -50,6 +54,11 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     @Override
     public String visitUnaryExpr(Expr.Unary expr) {
         return parenthesize(expr.operator.lexeme, expr.right);
+    }
+
+    @Override
+    public String visitIfStmt(Stmt.If stmt) {
+        return "IF TODO";
     }
 
     @Override

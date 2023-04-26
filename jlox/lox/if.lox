@@ -1,0 +1,21 @@
+// Just basic
+if (false) {
+  print "not expected1";
+} else {
+  print "expected1";
+}
+
+if (true) print "expected2";
+
+// Danging else problem - for us else is bound to the closest (inner) if
+if (true) if (false) print "not expected3"; else print "expected3";
+if (true) if (true) print "expected4"; else print "not expected 4";
+if (false) if (true) print "not expected5"; else print "not expected5.1";
+if (false) if (false) print "not expected6"; else print "not expected6.1";
+
+// More complex condition expr
+if (1 + 2 * 2 > 10) {
+  print "not expected7";
+} else {
+  print "expected7";
+}

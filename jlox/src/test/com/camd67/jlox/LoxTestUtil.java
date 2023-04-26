@@ -20,12 +20,6 @@ public class LoxTestUtil {
         return new Lox(System.in, System.out, System.err, System::exit);
     }
 
-    public static String loxOutput(String out) {
-        // Normalize our line endings so that tests pass.
-        // PrintStream outputs system line endings by default.
-        return out.replaceAll("\n", System.lineSeparator());
-    }
-
     /**
      * An instance of lox that sends all output and reads all input from test
      * local variables.
@@ -36,8 +30,8 @@ public class LoxTestUtil {
         private static final IntConsumer defaultOnExit = (int i) ->
             assertEquals(0, i, "Exit called with a non-zero code");
 
-        public final OutputStream loxOutStream = new ByteArrayOutputStream();
-        public final OutputStream loxErrStream = new ByteArrayOutputStream();
+        private final OutputStream loxOutStream;
+        private final OutputStream loxErrStream;
         private final InputStream inputStream;
         public final IntConsumer onExit;
         public final Lox lox;
@@ -57,11 +51,21 @@ public class LoxTestUtil {
         public TestLox(String inputData, IntConsumer onExit) {
             inputStream = new ByteArrayInputStream(inputData.getBytes(StandardCharsets.UTF_8));
             this.onExit = onExit;
+            loxErrStream = new ByteArrayOutputStream();
+            loxOutStream = new ByteArrayOutputStream();
             lox = new Lox(inputStream, new PrintStream(loxOutStream), new PrintStream(loxErrStream), onExit);
         }
 
         public void assertNoErrOutput() {
             assertEquals("", loxErrStream.toString());
+        }
+
+        public void assertOutputEquals(String expected) {
+            assertEquals(expected, loxOutStream.toString().replaceAll("\r\n", "\n"));
+        }
+
+        public void assertErrEquals(String expected) {
+            assertEquals(expected, loxErrStream.toString().replaceAll("\r\n", "\n"));
         }
 
         @Override
@@ -70,5 +74,6 @@ public class LoxTestUtil {
             loxOutStream.close();
             inputStream.close();
         }
+
     }
 }

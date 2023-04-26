@@ -67,16 +67,36 @@ public class Parser {
 
     /**
      * Grammar rule:
-     * statement -> expressionStmt | printStmt | block
+     * statement -> expressionStmt | ifStmt | printStmt | block
      */
     private Stmt statement() {
         if (match(PRINT)) {
             return printStatement();
+        } else if (match(IF)) {
+            return ifStatement();
         } else if (match(LEFT_BRACE)) {
             return new Stmt.Block(block());
         } else {
             return expressionStatement();
         }
+    }
+
+    /**
+     * Grammar rule:
+     * ifStmt -> "if" "(" expression ")" statement ( "else" statement )? ;
+     */
+    private Stmt ifStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'if'.");
+        var condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after if condition.");
+
+        var thenBranch = statement();
+        Stmt elseBranch = null;
+        if (match(ELSE)) {
+            elseBranch = statement();
+        }
+
+        return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
     /**

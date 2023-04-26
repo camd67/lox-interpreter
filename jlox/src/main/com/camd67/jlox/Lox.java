@@ -8,6 +8,8 @@ import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.IntConsumer;
 
 public class Lox implements LoxGlobal {
@@ -47,8 +49,7 @@ public class Lox implements LoxGlobal {
     }
 
     void runFile(String filePath) throws IOException {
-        var bytes = Files.readAllBytes(Paths.get(filePath));
-        run(new String(bytes, Charset.defaultCharset()));
+        run(Files.readString(Paths.get(filePath)));
         if (hadError) {
             exit.accept(65);
         }
@@ -63,6 +64,7 @@ public class Lox implements LoxGlobal {
         output.println("jlox REPL");
         output.println("CTRL + D to exit");
         output.println("-f <filename> to run a file in the lox dir (no ext)");
+        output.println("-d plus your input will print out the AST");
         output.println();
 
         while (true) {
@@ -76,20 +78,50 @@ public class Lox implements LoxGlobal {
             if (line.startsWith("-f ")) {
                 runFile("lox/" + line.substring(3) + ".lox");
                 return;
+            } else if (line.startsWith("-d ")) {
+                printAst(line.substring(3));
+            } else {
+                runViaRepl(line);
             }
-
-            run(line);
             // Clear our error each time we run a prompt.
             // Don't want a single error to corrupt our entire REPL
             hadError = false;
         }
     }
 
-    private void run(String source) {
+    private List<Stmt> parseStatements(String source) {
         var scanner = new Scanner(source, this);
         var tokens = scanner.scanTokens();
         var parser = new Parser(tokens, this);
-        var statements = parser.parse();
+        return parser.parse();
+    }
+
+    private void printAst(String source) {
+        var statements = parseStatements(source);
+
+        new AstPrinter().print(statements, this);
+    }
+
+    private void runViaRepl(String source) {
+        var statements = parseStatements(source);
+        if (hadError) {
+            return;
+        }
+
+        // In the repl we want to silently wrap expressions in a print statement for "calculator mode"
+        for (var i = 0; i < statements.size(); i++) {
+            var stmt = statements.get(i);
+            if (stmt instanceof Stmt.Expression) {
+                var expr = ((Stmt.Expression) statements.get(i)).expression;
+                statements.set(i, new Stmt.Print(expr));
+            }
+        }
+
+        interpreter.interpret(statements);
+    }
+
+    private void run(String source) {
+        var statements = parseStatements(source);
 
         if (hadError) {
             return;
@@ -119,7 +151,8 @@ public class Lox implements LoxGlobal {
 
     @Override
     public void runtimeError(RuntimeError error) {
-        errOutput.println(error.getMessage() + "\n[line " + error.token.line + "]");
+        errOutput.println(error.getMessage());
+        errOutput.println("[line " + error.token.line + "]");
         hadRuntimeError = true;
     }
 
