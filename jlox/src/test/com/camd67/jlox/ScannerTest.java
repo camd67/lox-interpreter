@@ -7,8 +7,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static com.camd67.jlox.TokenType.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ScannerTest {
     static Stream<Arguments> scanForTokens_source() {
@@ -31,7 +31,7 @@ class ScannerTest {
             Arguments.of(
                 "All Tokens",
                 "(){},.-+;*/?:! != == = > >= < <= abcde \"abcde\" 123 and class else " +
-                    "false fun for if nil or print return super this true var while",
+                    "false fun for if nil or print return super this true var while break",
                 List.of(
                     new Token(LEFT_PAREN, "(", null, 1),
                     new Token(RIGHT_PAREN, ")", null, 1),
@@ -73,6 +73,7 @@ class ScannerTest {
                     new Token(TRUE, "true", null, 1),
                     new Token(VAR, "var", null, 1),
                     new Token(WHILE, "while", null, 1),
+                    new Token(BREAK, "break", null, 1),
                     new Token(EOF, "", null, 1)
                 )
             ),

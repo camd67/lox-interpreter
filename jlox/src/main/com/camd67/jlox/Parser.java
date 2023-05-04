@@ -67,7 +67,7 @@ public class Parser {
 
     /**
      * Grammar rule:
-     * statement -> expressionStmt | ifStmt | printStmt | block
+     * statement -> expressionStmt | ifStmt | printStmt | whileStmt | break | block
      */
     private Stmt statement() {
         if (match(PRINT)) {
@@ -76,9 +76,99 @@ public class Parser {
             return ifStatement();
         } else if (match(LEFT_BRACE)) {
             return new Stmt.Block(block());
+        } else if (match(WHILE)) {
+            return whileStatement();
+        } else if (match(FOR)) {
+            return forStatement();
+        } else if (match(BREAK)) {
+            return breakStatement();
         } else {
             return expressionStatement();
         }
+    }
+
+    /**
+     * Grammar rule:
+     * breakStmt -> "break" ";"
+     */
+    private Stmt.Break breakStatement() {
+        var breakToken = previous();
+        consume(SEMICOLON, "Expect ';' after 'break'.");
+        return new Stmt.Break(breakToken);
+    }
+
+    /**
+     * Note this is a sugared expression, thus this will break down into
+     * other statements as opposed to a for statement.
+     * Grammar rule:
+     * forStmt -> "for" "(" (varDecl | exprStmt | ";") expression? ";" expression? ")" statement ;
+     */
+    private Stmt forStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'for'.");
+
+        Stmt initializer;
+        if (match(SEMICOLON)) {
+            initializer = null;
+        } else if (match(VAR)) {
+            initializer = varDeclaration();
+        } else {
+            initializer = expressionStatement();
+        }
+
+        Expr condition = null;
+        if (!check(SEMICOLON)) {
+            condition = expression();
+        }
+        consume(SEMICOLON, "Expect ';' after loop condition");
+
+        Expr increment = null;
+        if (!check(RIGHT_PAREN)) {
+            increment = expression();
+        }
+        consume(RIGHT_PAREN, "Expect ')' after for clauses.");
+
+        var body = statement();
+
+        // Desugar our for loop into
+        // {
+        //   initializer
+        //   while (condition) {
+        //     body
+        //     increment
+        //   }
+        // }
+
+        // Do we have an increment?
+        // Stick it at the end of the body
+        if (increment != null) {
+            body = new Stmt.Block(List.of(body, new Stmt.Expression(increment)));
+        }
+
+        // Missing condition? It's always while(true) then
+        if (condition == null) {
+            condition = new Expr.Literal(true);
+        }
+        body = new Stmt.While(condition, body);
+
+        // Do we have an initializer? Place that in a block above the existing body.
+        // This must be in it's own block so we don't corrupt any outer scopes.
+        if (initializer != null) {
+            body = new Stmt.Block(List.of(initializer, body));
+        }
+
+        return body;
+    }
+
+    /**
+     * Grammar rule:
+     * whileStmt -> "while" "(" expression ")" statement;
+     */
+    private Stmt.While whileStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'while'.");
+        var condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after while condition.");
+        var body = statement();
+        return new Stmt.While(condition, body);
     }
 
     /**
@@ -155,7 +245,7 @@ public class Parser {
             var equals = previous();
             var value = ternary();
             if (expr instanceof Expr.Variable) {
-                var name = ((Expr.Variable)expr).name;
+                var name = ((Expr.Variable) expr).name;
                 return new Expr.Assign(name, value);
             }
 

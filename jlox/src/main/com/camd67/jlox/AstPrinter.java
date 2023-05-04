@@ -2,6 +2,10 @@ package com.camd67.jlox;
 
 import java.util.List;
 
+/**
+ * NOTE:
+ * This class currently has a lot of places where things are in an in-progress state
+ */
 public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     void print(List<Stmt> statements, LoxGlobal lox) {
         for (var statement : statements) {
@@ -54,6 +58,16 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     @Override
     public String visitUnaryExpr(Expr.Unary expr) {
         return parenthesize(expr.operator.lexeme, expr.right);
+    }
+
+    @Override
+    public String visitBreakStmt(Stmt.Break stmt) {
+        return "(break)";
+    }
+
+    @Override
+    public String visitWhileStmt(Stmt.While stmt) {
+        return "WHILE TODO";
     }
 
     @Override

@@ -1,0 +1,34 @@
+// All loops in this file should be relatively "small"
+// that is we don't want our tests spinning on infinite or effectively infinite loops.
+// Instead we should follow the pattern of printing after
+// the break.
+// That way our test actually finishes reasonably quickly and we make sure we don't mess up
+// the breaking logic.
+
+for (var a = 0; a < 100; a = a + 1) {
+    break;
+    print "shouldn't see this";
+}
+
+print "loop 2";
+for (var a = 0; a < 100; a = a + 1) {
+    print a;
+    if (a > 1) {
+      break;
+      print "shouldn't see this";
+    }
+    print "after check";
+}
+
+print "loop 3";
+var a = 0;
+while (a < 100) {
+  if (a < 10) {
+    if (true) {
+      print "breaking!";
+      break;
+      print "shouldn't see this";
+    }
+  }
+  a = a + 1;
+}

@@ -54,6 +54,50 @@ public class LoxTest {
                     expected4
                     expected7
                     """
+            ),
+            Arguments.of(
+                "while",
+                """
+                    0
+                    1
+                    2
+                    3
+                    4
+                    5
+                    6
+                    7
+                    8
+                    9
+                    """
+            ),
+            Arguments.of(
+                "for",
+                """
+                    0
+                    1
+                    2
+                    reuse a
+                    0
+                    out of loop
+                    0
+                    partial for
+                    0
+                    1
+                    2
+                    """
+            ),
+            Arguments.of(
+                "break",
+                """
+                    loop 2
+                    0
+                    after check
+                    1
+                    after check
+                    2
+                    loop 3
+                    breaking!
+                    """
             )
         );
     }

@@ -3,8 +3,30 @@ package com.camd67.jlox;
 import java.util.List;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+    private enum State {
+        /**
+         * If we're in a loop during normal execution
+         */
+        IN_LOOP,
+
+        /**
+         * Track if we're trying to break out of a loop or not.
+         * This seems like it would probably be better to just
+         * jump to the end of the loop but we don't have access
+         * to that right now.
+         */
+        BREAKING_LOOP,
+
+        /**
+         * Normal everyday execution
+         */
+        REGULAR_EXECUTION,
+        ;
+    }
+
     private final LoxGlobal lox;
     private Environment environment = new Environment();
+    private State state = State.REGULAR_EXECUTION;
 
     public Interpreter(LoxGlobal lox) {
         this.lox = lox;
@@ -18,6 +40,31 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         } catch (RuntimeError error) {
             lox.runtimeError(error);
         }
+    }
+
+    @Override
+    public Void visitBreakStmt(Stmt.Break stmt) {
+        if (state != State.IN_LOOP) {
+            throw new RuntimeError(stmt.token, "Break occurred outside loop");
+        }
+        state = State.BREAKING_LOOP;
+        return null;
+    }
+
+    @Override
+    public Void visitWhileStmt(Stmt.While stmt) {
+        while (isTruthy(evaluate(stmt.condition))) {
+            // We only consider ourselves in the loop when we're actually
+            // inside the loop body. Not in the condition.
+            state = State.IN_LOOP;
+            execute(stmt.body);
+            if (state == State.BREAKING_LOOP) {
+                state = State.REGULAR_EXECUTION;
+                return null;
+            }
+            state = State.REGULAR_EXECUTION;
+        }
+        return null;
     }
 
     @Override
@@ -174,7 +221,6 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     private void checkNumberOperand(Token operator, Object operand) {
         if (operand instanceof Double) {
-            return;
         } else {
             throw new RuntimeError(operator, "Operand must be a number.");
         }
@@ -182,7 +228,6 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     private void checkNumberOperands(Token operator, Object left, Object right) {
         if (left instanceof Double && right instanceof Double) {
-            return;
         } else {
             throw new RuntimeError(operator, "Operands must be a numbers.");
         }
@@ -218,6 +263,9 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     private void execute(Stmt statement) {
+        if (state == State.BREAKING_LOOP) {
+            return;
+        }
         statement.accept(this);
     }
 

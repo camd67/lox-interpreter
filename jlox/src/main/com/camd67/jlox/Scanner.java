@@ -34,18 +34,42 @@ class Scanner {
         var c = advance();
         switch (c) {
             // Deal with all our single character values. These happen without question
-            case '(': addToken(LEFT_PAREN); break;
-            case ')': addToken(RIGHT_PAREN); break;
-            case '{': addToken(LEFT_BRACE); break;
-            case '}': addToken(RIGHT_BRACE); break;
-            case ',': addToken(COMMA); break;
-            case '.': addToken(DOT); break;
-            case '-': addToken(MINUS); break;
-            case '+': addToken(PLUS); break;
-            case ';': addToken(SEMICOLON); break;
-            case '*': addToken(STAR); break;
-            case '?': addToken(QUESTION); break;
-            case ':': addToken(COLON); break;
+            case '(':
+                addToken(LEFT_PAREN);
+                break;
+            case ')':
+                addToken(RIGHT_PAREN);
+                break;
+            case '{':
+                addToken(LEFT_BRACE);
+                break;
+            case '}':
+                addToken(RIGHT_BRACE);
+                break;
+            case ',':
+                addToken(COMMA);
+                break;
+            case '.':
+                addToken(DOT);
+                break;
+            case '-':
+                addToken(MINUS);
+                break;
+            case '+':
+                addToken(PLUS);
+                break;
+            case ';':
+                addToken(SEMICOLON);
+                break;
+            case '*':
+                addToken(STAR);
+                break;
+            case '?':
+                addToken(QUESTION);
+                break;
+            case ':':
+                addToken(COLON);
+                break;
             // Then deal with operators that are maybe 2 characters
             // These all peek ahead one character in case there's a combo
             case '!':
@@ -81,7 +105,7 @@ class Scanner {
             case '/':
                 if (match('/')) {
                     // Double-comments consume till the end
-                    while(peek() != '\n' && !isAtEnd()) {
+                    while (peek() != '\n' && !isAtEnd()) {
                         advance();
                     }
                 } else if (match('*')) {
@@ -101,7 +125,9 @@ class Scanner {
                 line++;
                 break;
 
-            case '"': string(); break;
+            case '"':
+                string();
+                break;
             default:
                 // we gotta deal with some stuff in default since they could just be anything
                 if (isDigit(c)) {
@@ -123,8 +149,8 @@ class Scanner {
 
     private boolean isAlpha(char c) {
         return (c >= 'a' && c <= 'z') ||
-                (c >= 'A' && c <= 'Z') ||
-                c == '_';
+            (c >= 'A' && c <= 'Z') ||
+            c == '_';
     }
 
     private boolean isAlphaNumeric(char c) {
