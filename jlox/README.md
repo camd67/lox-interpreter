@@ -5,16 +5,18 @@
 ```
 program -> declaration* EOF;
 
-declaration -> varDecl | statement;
+declaration -> funDecl | varDecl | statement;
 statement -> exprStatement
             | forStmt
             | ifStmt
             | printStmt
+            | returnStmt
             | whileStmt
             | breakStmt
             | block
             ;
 
+returnStmt -> "return" expression? ";";
 breakStmt -> "break" ";"
 forStmt -> "for" "(" (varDecl | exprStmt | ";") expression? ";" expression? ")" statement ;
 whileStmt -> "while" "(" expression ")" statement;
@@ -25,6 +27,12 @@ printStmt -> "print" expression ";";
 
 varDecl -> "var" IDENTIFIER ("=" expression)?";";
 
+funDecl -> "fun" function;
+function -> IDENTIFIER "(" parameters ? ")" block;
+parameters -> IDENTIFIER ("<" IDENTIFIER)*;
+
+arguments -> expression ( "," expression )*;
+
 expression -> assignment;
 assignment -> (IDENTIFIER "=" assignment)? ternary;
 logicOr -> logicAnd ("or" logicAnd)*;
@@ -34,7 +42,8 @@ equality -> comparison ( ("!=" | "==") comparison )*;
 comparison -> term ( (">" | ">=" | "<" | "<=" ) term )*;
 term -> factor ( ("-" | "+" ) factor )*;
 factor -> unary ( ("/" | "*") unary)*;
-unary -> ("!" | "-") unary | primary;
+unary -> ("!" | "-") unary | call;
+call -> primary ( "(" arguments? ")" )*;
 primary -> NUMBER| STRING | "true" | "false" | "nil" | "(" expression ")";
 ```
 

@@ -1,0 +1,11 @@
+fun addPrint(a, b, c) {
+    print a + b + c;
+}
+addPrint(1, 4, 5);
+
+var a = "a";
+fun checkParamShadowing(a) {
+  print a;
+}
+checkParamShadowing("b");
+print a;

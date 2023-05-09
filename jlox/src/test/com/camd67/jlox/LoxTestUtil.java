@@ -61,7 +61,7 @@ public class LoxTestUtil {
         }
 
         public void assertOutputEquals(String expected) {
-            assertEquals(expected, loxOutStream.toString().replaceAll("\r\n", "\n"));
+            assertEquals(expected, getOutput());
         }
 
         public void assertErrEquals(String expected) {
@@ -75,5 +75,8 @@ public class LoxTestUtil {
             inputStream.close();
         }
 
+        public String getOutput() {
+            return loxOutStream.toString().replaceAll("\r\n", "\n");
+        }
     }
 }

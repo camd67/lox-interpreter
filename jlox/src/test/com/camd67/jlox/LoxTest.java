@@ -10,6 +10,7 @@ import java.util.function.IntConsumer;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LoxTest {
     private static Stream<Arguments> fileSources() {
@@ -98,6 +99,39 @@ public class LoxTest {
                     loop 3
                     breaking!
                     """
+            ),
+            Arguments.of(
+                "functions",
+                """
+                    10
+                    b
+                    a
+                    """
+            ),
+            Arguments.of(
+                "fib",
+                """
+                    0
+                    1
+                    1
+                    2
+                    3
+                    5
+                    8
+                    13
+                    21
+                    34
+                    55
+                    89
+                    144
+                    233
+                    377
+                    610
+                    987
+                    1597
+                    2584
+                    4181
+                    """
             )
         );
     }
@@ -132,6 +166,24 @@ public class LoxTest {
                     inside
                     """
             );
+        }
+    }
+
+    @Test
+    void standardLibrary() throws IOException {
+        try (var mockLox = new LoxTestUtil.TestLox()) {
+            // Since we can't be 100% sure what time gets reported unless we mock out the clock
+            // (we should probably do that)
+            // we'll take a time snapshot before and after running the file and assert that the time was between those
+            var beforeTime = (double)System.currentTimeMillis() / 1000.0;
+            mockLox.lox.runFile("lox/stdLib.lox");
+            var afterTime = (double)System.currentTimeMillis() / 1000.0;
+
+            mockLox.assertNoErrOutput();
+            var output = mockLox.getOutput();
+            var timeOutput = Double.parseDouble(output);
+            assertTrue(beforeTime <= timeOutput, "Expected " + timeOutput + " to be after " + beforeTime);
+            assertTrue(afterTime >= timeOutput, "Expected " + timeOutput + " to be before " + afterTime);
         }
     }
 }

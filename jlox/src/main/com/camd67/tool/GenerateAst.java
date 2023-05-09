@@ -1,14 +1,8 @@
 package com.camd67.tool;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.CopyOption;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.Collections;
 import java.util.List;
 
 public class GenerateAst {
@@ -24,6 +18,7 @@ public class GenerateAst {
             // This really aught to be more strongly typed
             "Assign : Token type, Expr value",
             "Binary: Expr left, Token operator, Expr right",
+            "Call : Expr callee, Token paren, List<Expr> arguments",
             "Grouping: Expr expression",
             "Literal: Object value",
             "Unary: Token operator, Expr right",
@@ -35,9 +30,11 @@ public class GenerateAst {
             "Break : Token token",
             "While : Expr condition, Stmt body",
             "If : Expr condition, Stmt thenBranch, Stmt elseBranch",
+            "Function : Token name, List<Token> params, List<Stmt> body",
             "Block : List<Stmt> statements",
             "Expression : Expr expression",
             "Print : Expr expression",
+            "Return : Token keyword, Expr value",
             "Var : Token name, Expr initializer"
         ));
     }

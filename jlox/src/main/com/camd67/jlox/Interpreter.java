@@ -1,5 +1,6 @@
 package com.camd67.jlox;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
@@ -25,11 +26,37 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     private final LoxGlobal lox;
-    private Environment environment = new Environment();
     private State state = State.REGULAR_EXECUTION;
+
+    /**
+     * Global environment everyone has access to.
+     */
+    final Environment globals = new Environment();
+
+    /**
+     * The current environment the interpreter is interpreting.
+     */
+    private Environment environment = globals;
 
     public Interpreter(LoxGlobal lox) {
         this.lox = lox;
+
+        globals.define("clock", new LoxCallable() {
+            @Override
+            public int arity() {
+                return 0;
+            }
+
+            @Override
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                return (double)System.currentTimeMillis() / 1000.0;
+            }
+
+            @Override
+            public String toString() {
+                return "<native fn>";
+            }
+        });
     }
 
     void interpret(List<Stmt> statements) {
@@ -78,6 +105,13 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitFunctionStmt(Stmt.Function stmt) {
+        var function = new LoxFunction(stmt, environment);
+        environment.define(stmt.name.lexeme, function);
+        return null;
+    }
+
+    @Override
     public Void visitBlockStmt(Stmt.Block stmt) {
         executeBlock(stmt.statements, new Environment(environment));
         return null;
@@ -94,6 +128,19 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         var value = evaluate(stmt.expression);
         lox.logOut(stringify(value));
         return null;
+    }
+
+    @Override
+    public Void visitReturnStmt(Stmt.Return stmt) {
+        Object value = null;
+        if (stmt.value != null) {
+            value = evaluate(stmt.value);
+        }
+
+        // This could probably be implemented the same way as the state
+        // tracking for break statements... but I'll follow the book
+        // for this one.
+        throw new Return(value);
     }
 
     @Override
@@ -177,6 +224,28 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
         // unreachable
         return null;
+    }
+
+    @Override
+    public Object visitCallExpr(Expr.Call expr) {
+        var callee = evaluate(expr.callee);
+
+        var args = new ArrayList<Object>();
+        for (var argument : expr.arguments) {
+            args.add(evaluate(argument));
+        }
+
+        if (!(callee instanceof LoxCallable function)) {
+            throw new RuntimeError(expr.paren, "Can only call functions and classes.");
+        }
+
+        if (args.size() != function.arity()) {
+            throw new RuntimeError(
+                expr.paren,
+                "Expected " + function.arity() + " arguments but got " + args.size() + "."
+            );
+        }
+        return function.call(this, args);
     }
 
     @Override
@@ -269,7 +338,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         statement.accept(this);
     }
 
-    private void executeBlock(List<Stmt> statements, Environment newEnv) {
+    void executeBlock(List<Stmt> statements, Environment newEnv) {
         // Store our current env so we can push it back after running all statements in this block
         var previousEnv = this.environment;
         try {

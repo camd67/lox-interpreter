@@ -40,7 +40,9 @@ public class Parser {
      */
     private Stmt declaration() {
         try {
-            if (match(VAR)) {
+            if (match(FUN)) {
+                return function("function");
+            } else if (match(VAR)) {
                 return varDeclaration();
             }
             return statement();
@@ -48,6 +50,35 @@ public class Parser {
             synchronize();
             return null;
         }
+    }
+
+    /**
+     * Grammar rule:
+     * funDecl -> "fun" function;
+     * function -> IDENTIFIER "(" parameters ? ")" block;
+     * parameters -> IDENTIFIER ("<" IDENTIFIER)*;
+     */
+    private Stmt function(String kind) {
+        var name = consume(IDENTIFIER, "Expect " + kind + " name.");
+
+        consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
+        var parameters = new ArrayList<Token>();
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (parameters.size() >= 255) {
+                    // Don't throw since we're in a known state
+                    error(peek(), "Can't have more than 255 parameters");
+                }
+                parameters.add(consume(IDENTIFIER, "Expected parameter name."));
+            } while (match(COMMA));
+        }
+
+        consume(RIGHT_PAREN, "Expect ')' after parameters.");
+
+        // Consume the left brace so the block function is in the correct state
+        consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+        var body = block();
+        return new Stmt.Function(name, parameters, body);
     }
 
     /**
@@ -67,7 +98,7 @@ public class Parser {
 
     /**
      * Grammar rule:
-     * statement -> expressionStmt | ifStmt | printStmt | whileStmt | break | block
+     * statement -> expressionStmt | ifStmt | printStmt | returnStmt | whileStmt | break | block
      */
     private Stmt statement() {
         if (match(PRINT)) {
@@ -76,6 +107,8 @@ public class Parser {
             return ifStatement();
         } else if (match(LEFT_BRACE)) {
             return new Stmt.Block(block());
+        } else if (match(RETURN)) {
+            return returnStatement();
         } else if (match(WHILE)) {
             return whileStatement();
         } else if (match(FOR)) {
@@ -85,6 +118,18 @@ public class Parser {
         } else {
             return expressionStatement();
         }
+    }
+
+    private Stmt returnStatement() {
+        var keyword = previous();
+        // Assume we return null
+        Expr value = null;
+        // But if there's something there...
+        if (!check(SEMICOLON)) {
+            value = expression();
+        }
+        consume(SEMICOLON, "Expect ';' after return value.");
+        return new Stmt.Return(keyword, value);
     }
 
     /**
@@ -337,8 +382,47 @@ public class Parser {
             var right = unary();
             return new Expr.Unary(operator, right);
         } else {
-            return primary();
+            return call();
         }
+    }
+
+    /**
+     * Grammar rule:
+     * call -> primary ( "(" arguments? ")" )*;
+     */
+    private Expr call() {
+        var expr = primary();
+
+        while (true) {
+            if (match(LEFT_PAREN)) {
+                expr = finishCall(expr);
+            } else {
+                break;
+            }
+        }
+        return expr;
+    }
+
+    /**
+     * "Grammar rule":
+     * arguments -> expression ( "," expression )*;
+     */
+    private Expr finishCall(Expr callee) {
+        var arguments = new ArrayList<Expr>();
+        // If we don't have a right paren yet
+        if (!check(RIGHT_PAREN)) {
+            // Start consuming arguments
+            do {
+                if (arguments.size() >= 255) {
+                    // don't throw this since we're in a known "good" state
+                    error(peek(), "Can't have more than 255 arguments.");
+                }
+                arguments.add(expression());
+            } while (match(COMMA));
+        }
+
+        var paren = consume(RIGHT_PAREN, "Expect ')' after arguments.");
+        return new Expr.Call(callee, paren, arguments);
     }
 
     /**
