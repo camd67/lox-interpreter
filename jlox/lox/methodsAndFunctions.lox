@@ -1,0 +1,13 @@
+class Box {}
+
+fun notMethod(argument) {
+    print "Called function with " + argument;
+}
+
+var box = Box();
+
+// store our global function as a field in box
+box.function = notMethod;
+
+// Then call that function which looks like calling a method
+box.function("argument");

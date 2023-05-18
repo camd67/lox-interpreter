@@ -78,5 +78,9 @@ public class LoxTestUtil {
         public String getOutput() {
             return loxOutStream.toString().replaceAll("\r\n", "\n");
         }
+
+        public void assertNoOutput() {
+            assertEquals("", loxOutStream.toString());
+        }
     }
 }

@@ -40,11 +40,14 @@ public class Parser {
      */
     private Stmt declaration() {
         try {
-            if (match(FUN)) {
+            if (match(CLASS)) {
+                return classDeclaration();
+            } else if (match(FUN)) {
                 return function("function");
             } else if (match(VAR)) {
                 return varDeclaration();
             }
+
             return statement();
         } catch (ParseError error) {
             synchronize();
@@ -54,11 +57,28 @@ public class Parser {
 
     /**
      * Grammar rule:
+     * classDecl -> "class" IDENTIFIER "{" function* "}";
+     */
+    private Stmt classDeclaration() {
+        var name = consume(IDENTIFIER, "Expect class name");
+        consume(LEFT_BRACE, "Expect '(' before class body.");
+
+        var methods = new ArrayList<Stmt.Function>();
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            methods.add(function("method"));
+        }
+
+        consume(RIGHT_BRACE, "Expect '}' after class body.");
+        return new Stmt.Class(name, methods);
+    }
+
+    /**
+     * Grammar rule:
      * funDecl -> "fun" function;
      * function -> IDENTIFIER "(" parameters ? ")" block;
      * parameters -> IDENTIFIER ("<" IDENTIFIER)*;
      */
-    private Stmt function(String kind) {
+    private Stmt.Function function(String kind) {
         var name = consume(IDENTIFIER, "Expect " + kind + " name.");
 
         consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
@@ -289,9 +309,11 @@ public class Parser {
         if (match(EQUAL)) {
             var equals = previous();
             var value = ternary();
-            if (expr instanceof Expr.Variable) {
-                var name = ((Expr.Variable) expr).name;
+            if (expr instanceof Expr.Variable varExpr) {
+                var name = varExpr.name;
                 return new Expr.Assign(name, value);
+            } else if (expr instanceof Expr.Get get) {
+                return new Expr.Set(get.object, get.name, value);
             }
 
             // Don't throw our error since we don't need to synchronize after this.
@@ -396,6 +418,9 @@ public class Parser {
         while (true) {
             if (match(LEFT_PAREN)) {
                 expr = finishCall(expr);
+            } else if (match(DOT)) {
+                var name = consume(IDENTIFIER, "Expect property name after '.'.");
+                expr = new Expr.Get(expr, name);
             } else {
                 break;
             }
@@ -438,6 +463,8 @@ public class Parser {
             return new Expr.Literal(null);
         } else if (match(NUMBER, STRING)) {
             return new Expr.Literal(previous().literal);
+        } else if (match(THIS)) {
+            return new Expr.This(previous());
         } else if (match(IDENTIFIER)) {
             return new Expr.Variable(previous());
         } else if (match(LEFT_PAREN)) {

@@ -79,4 +79,28 @@ public class Environment {
             throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
         }
     }
+
+    public Object getAt(int distance, String name) {
+        return ancestor(distance).values.get(name);
+    }
+
+    /**
+     * Returns back the environment that is distance steps away from
+     * the current environment.
+     * Mostly used to resolve variables to a specific environment.
+     */
+    private Environment ancestor(int distance) {
+        var environment = this;
+        for (var i = 0; i < distance; i++) {
+            environment = environment.enclosing;
+        }
+        return environment;
+    }
+
+    /**
+     * Assigns the given name/value pair at the environment distance steps away.
+     */
+    public void assignAt(int distance, Token name, Object value) {
+        ancestor(distance).values.put(name.lexeme, value);
+    }
 }

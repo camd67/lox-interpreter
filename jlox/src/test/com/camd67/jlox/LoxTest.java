@@ -132,6 +132,61 @@ public class LoxTest {
                     2584
                     4181
                     """
+            ),
+            Arguments.of(
+                "leakyClosure",
+                """
+                    global
+                    global
+                    """
+            ),
+            Arguments.of(
+                "class",
+                """
+                    <class Dog>
+                    <instance Dog>
+                    Jimmy Biscuits
+                    Dog can bark: true
+                    Woof!
+                    <instance Dog>
+                    I'm a dog named Jimmy Biscuits
+                    """
+            ),
+            Arguments.of(
+                "methodsAndFunctions",
+                """
+                    Called function with argument
+                    """
+            ),
+            Arguments.of(
+                "janeAndBill",
+                """
+                    Jane
+                    """
+            )
+        );
+    }
+
+    private static Stream<Arguments> errorFileSources() {
+        return Stream.of(
+            Arguments.of(
+                "doubleLocalDefine",
+                """
+                    [line3] Error at 'a': Variable with this name is already in this scope.
+                    """
+            ),
+            Arguments.of(
+                "globalReturn",
+                """
+                    [line1] Error at 'return': Can't return from top-level code.
+                    """
+            ),
+            Arguments.of(
+                "invalidThis",
+                """
+                    [line1] Error at 'this': Can't use 'this' outside of a class.
+                    [line4] Error at 'this': Can't use 'this' outside of a class.
+                    """
             )
         );
     }
@@ -144,6 +199,18 @@ public class LoxTest {
 
             mockLox.assertNoErrOutput();
             mockLox.assertOutputEquals(expectedOutput);
+        }
+    }
+
+    @ParameterizedTest(name = "Test error file - {0}.lox")
+    @MethodSource("errorFileSources")
+    void testErrorFiles(String loxFilename, String expectedError) throws IOException {
+        IntConsumer expectedExit = (int i) -> assertEquals(65, i);
+        try (var mockLox = new LoxTestUtil.TestLox(expectedExit)) {
+            mockLox.lox.runFile("lox/" + loxFilename + ".lox");
+
+            mockLox.assertErrEquals(expectedError);
+            mockLox.assertNoOutput();
         }
     }
 

@@ -1,0 +1,25 @@
+fun fib(n) {
+    if (n <= 1) return n;
+    return fib(n - 2) + fib(n - 1);
+}
+
+var fibCount = 40;
+
+print "Starting fib count to " + fibCount;
+
+var start = clock();
+fib(fibCount);
+var end = clock();
+
+print "Execution took:";
+print end - start;
+
+/*
+Run info:
+
+jlox
+=============================
+Execution took:
+80.85699987411499
+
+*/

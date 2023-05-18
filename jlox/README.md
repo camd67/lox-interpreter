@@ -5,7 +5,7 @@
 ```
 program -> declaration* EOF;
 
-declaration -> funDecl | varDecl | statement;
+declaration -> classDecl | funDecl | varDecl | statement;
 statement -> exprStatement
             | forStmt
             | ifStmt
@@ -31,10 +31,14 @@ funDecl -> "fun" function;
 function -> IDENTIFIER "(" parameters ? ")" block;
 parameters -> IDENTIFIER ("<" IDENTIFIER)*;
 
+classDecl -> "class" IDENTIFIER "{" function* "}";
+function -> IDENTIFIER "(" parameters? ")" block;
+parameters -> IDENTIFIER ( "," IDENTIFIER )*;
+
 arguments -> expression ( "," expression )*;
 
 expression -> assignment;
-assignment -> (IDENTIFIER "=" assignment)? ternary;
+assignment -> (call "."? IDENTIFIER "=" assignment | logic_or;
 logicOr -> logicAnd ("or" logicAnd)*;
 logicAnd -> equality ("and" equality)*;
 ternary -> equality ( "?" ternary ":" ternary );
@@ -43,7 +47,7 @@ comparison -> term ( (">" | ">=" | "<" | "<=" ) term )*;
 term -> factor ( ("-" | "+" ) factor )*;
 factor -> unary ( ("/" | "*") unary)*;
 unary -> ("!" | "-") unary | call;
-call -> primary ( "(" arguments? ")" )*;
+call -> primary ( "(" arguments? ")" | "." IDENTIFIER )*;
 primary -> NUMBER| STRING | "true" | "false" | "nil" | "(" expression ")";
 ```
 

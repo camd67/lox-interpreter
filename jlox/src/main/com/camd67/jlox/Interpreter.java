@@ -1,7 +1,9 @@
 package com.camd67.jlox;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     private enum State {
@@ -38,6 +40,14 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
      */
     private Environment environment = globals;
 
+    /**
+     * Map of known local variables by depth.
+     * These refer to the exact Expr token in our AST.
+     * This must NOT be done by equals but instead refer
+     * to each token uniquely!
+     */
+    private final Map<Expr, Integer> locals = new HashMap<>();
+
     public Interpreter(LoxGlobal lox) {
         this.lox = lox;
 
@@ -49,7 +59,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
             @Override
             public Object call(Interpreter interpreter, List<Object> arguments) {
-                return (double)System.currentTimeMillis() / 1000.0;
+                return (double) System.currentTimeMillis() / 1000.0;
             }
 
             @Override
@@ -118,6 +128,21 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        environment.define(stmt.name.lexeme, null);
+
+        var methods = new HashMap<String, LoxFunction>();
+        for (var method : stmt.methods) {
+            var function = new LoxFunction(method, environment);
+            methods.put(method.name.lexeme, function);
+        }
+        var klass = new LoxClass(stmt.name.lexeme, methods);
+
+        environment.assign(stmt.name, klass);
+        return null;
+    }
+
+    @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
         evaluate(stmt.expression);
         return null;
@@ -157,7 +182,12 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitAssignExpr(Expr.Assign expr) {
         var value = evaluate(expr.value);
-        environment.assign(expr.type, value);
+        var distance = locals.get(expr);
+        if (distance != null) {
+            environment.assignAt(distance, expr.type, value);
+        } else {
+            globals.assign(expr.type, value);
+        }
         return value;
     }
 
@@ -249,6 +279,34 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Object visitGetExpr(Expr.Get expr) {
+        var object = evaluate(expr.object);
+        if (object instanceof LoxInstance obj) {
+            return obj.get(expr.name);
+        }
+
+        throw new RuntimeError(expr.name, "Only instances have properties.");
+    }
+
+    @Override
+    public Object visitSetExpr(Expr.Set expr) {
+        var object = evaluate(expr.object);
+
+        if (!(object instanceof LoxInstance)) {
+            throw new RuntimeError(expr.name, "Only instances have fields.");
+        }
+
+        var value = evaluate(expr.value);
+        ((LoxInstance)object).set(expr.name, value);
+        return null;
+    }
+
+    @Override
+    public Object visitThisExpr(Expr.This expr) {
+        return lookupVariable(expr.keyword, expr);
+    }
+
+    @Override
     public Object visitGroupingExpr(Expr.Grouping expr) {
         return evaluate(expr.expression);
     }
@@ -285,7 +343,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Object visitVariableExpr(Expr.Variable expr) {
-        return environment.get(expr.name);
+        return lookupVariable(expr.name, expr);
     }
 
     private void checkNumberOperand(Token operator, Object operand) {
@@ -348,6 +406,20 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             }
         } finally {
             this.environment = previousEnv;
+        }
+    }
+
+    void resolve(Expr expr, int depth) {
+        locals.put(expr, depth);
+    }
+
+    private Object lookupVariable(Token name, Expr expr) {
+        var distance = locals.get(expr);
+        if (distance != null) {
+            return environment.getAt(distance, name.lexeme);
+        } else {
+            // No depth? Assume we're globals
+            return globals.get(name);
         }
     }
 

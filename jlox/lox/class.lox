@@ -1,0 +1,36 @@
+class Dog {
+    canBark() {
+        return true;
+    }
+
+    bark() {
+        print "Woof!";
+    }
+
+    identify() {
+        print this;
+    }
+
+    announce() {
+        var type = "dog";
+        print "I'm a " + type + " named " + this.name;
+    }
+}
+
+// Instances and classes are two separate things
+print Dog;
+print Dog();
+
+// Arbitrary state can be stored on instances
+var dog = Dog();
+dog.name = "Jimmy Biscuits";
+print dog.name;
+
+print "Dog can bark: " + dog.canBark();
+dog.bark();
+
+var dogIdentity = dog.identify;
+
+dogIdentity();
+
+dog.announce();

@@ -106,12 +106,13 @@ public class Lox implements LoxGlobal {
             return;
         }
 
+        new Resolver(interpreter, this).resolve(statements);
+
         // In the repl we want to silently wrap expressions in a print statement for "calculator mode"
         for (var i = 0; i < statements.size(); i++) {
             var stmt = statements.get(i);
-            if (stmt instanceof Stmt.Expression) {
-                var expr = ((Stmt.Expression) statements.get(i)).expression;
-                statements.set(i, new Stmt.Print(expr));
+            if (stmt instanceof Stmt.Expression expr) {
+                statements.set(i, new Stmt.Print(expr.expression));
             }
         }
 
@@ -120,6 +121,12 @@ public class Lox implements LoxGlobal {
 
     private void run(String source) {
         var statements = parseStatements(source);
+
+        if (hadError) {
+            return;
+        }
+
+        new Resolver(interpreter, this).resolve(statements);
 
         if (hadError) {
             return;

@@ -50,6 +50,21 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     }
 
     @Override
+    public String visitGetExpr(Expr.Get expr) {
+        return parenthesize("get", expr);
+    }
+
+    @Override
+    public String visitSetExpr(Expr.Set expr) {
+        return parenthesize("set", expr.object, expr.value);
+    }
+
+    @Override
+    public String visitThisExpr(Expr.This expr) {
+        return "this";
+    }
+
+    @Override
     public String visitGroupingExpr(Expr.Grouping expr) {
         return parenthesize("group", expr.expression);
     }
@@ -88,6 +103,11 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<String> {
     @Override
     public String visitBlockStmt(Stmt.Block stmt) {
         return "BLOCK TODO";
+    }
+
+    @Override
+    public String visitClassStmt(Stmt.Class stmt) {
+        return "(class " + stmt.name.lexeme + ")";
     }
 
     @Override
