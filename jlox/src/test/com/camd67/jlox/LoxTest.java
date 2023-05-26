@@ -163,6 +163,15 @@ public class LoxTest {
                 """
                     Jane
                     """
+            ),
+            Arguments.of(
+                "initializer",
+                """
+                    <instance Foo>
+                    <instance Foo>
+                    <instance Foo>
+                    <instance EarlyReturn>
+                    """
             )
         );
     }
@@ -186,6 +195,12 @@ public class LoxTest {
                 """
                     [line1] Error at 'this': Can't use 'this' outside of a class.
                     [line4] Error at 'this': Can't use 'this' outside of a class.
+                    """
+            ),
+            Arguments.of(
+                "invalidInit",
+                """
+                    [line3] Error at 'return': Can't return a value from an initializer.
                     """
             )
         );

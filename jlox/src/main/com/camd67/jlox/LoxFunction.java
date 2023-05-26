@@ -6,9 +6,16 @@ public class LoxFunction implements LoxCallable {
     private final Stmt.Function declaration;
     private final Environment closure;
 
-    public LoxFunction(Stmt.Function declaration, Environment closure) {
+    /**
+     * Track if this function is a class initializer.
+     * We've got some special logic to do when it is.
+     */
+    private final boolean isInitializer;
+
+    public LoxFunction(Stmt.Function declaration, Environment closure, boolean isInitializer) {
         this.declaration = declaration;
         this.closure = closure;
+        this.isInitializer = isInitializer;
     }
 
     @Override
@@ -26,8 +33,19 @@ public class LoxFunction implements LoxCallable {
         try {
             interpreter.executeBlock(declaration.body, environment);
         } catch (Return returnStmt) {
+            if (isInitializer) {
+                return closure.getAt(0, "this");
+            }
             return returnStmt.value;
         }
+
+        if (isInitializer) {
+            // If we're an initializer we want to always return 'this'
+            // to allow chaining after the constructor.
+            // That "field" is always at the parent env.
+            return closure.getAt(0, "this");
+        }
+
         return null;
     }
 
@@ -42,6 +60,6 @@ public class LoxFunction implements LoxCallable {
     LoxFunction bind(LoxInstance loxInstance) {
         var environment = new Environment(closure);
         environment.define("this", loxInstance);
-        return new LoxFunction(declaration, environment);
+        return new LoxFunction(declaration, environment, isInitializer);
     }
 }

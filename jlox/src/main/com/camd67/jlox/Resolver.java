@@ -14,14 +14,13 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private enum FunctionType {
         NONE,
         FUNCTION,
+        INITIALIZER,
         METHOD,
-        ;
     }
 
     private enum ClassType {
         NONE,
         CLASS,
-        ;
     }
 
     private final Interpreter interpreter;
@@ -180,6 +179,9 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
         for (var method : stmt.methods) {
             var declaration = FunctionType.METHOD;
+            if (method.name.lexeme.equals("init")) {
+                declaration = FunctionType.INITIALIZER;
+            }
             resolveFunction(method, declaration);
         }
 
@@ -205,7 +207,13 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         if (currentFunction == FunctionType.NONE) {
             loxGlobal.error(stmt.keyword, "Can't return from top-level code.");
         }
-        resolve(stmt.value);
+
+        if (stmt.value != null) {
+            if (currentFunction == FunctionType.INITIALIZER) {
+                loxGlobal.error(stmt.keyword, "Can't return a value from an initializer.");
+            }
+            resolve(stmt.value);
+        }
         return null;
     }
 
